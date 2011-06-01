@@ -1,0 +1,23 @@
+This tutorial describes how I created my blog. It will record all the ideas that I got during the process and solutions and steps that I did in order
+to get things done.
+I will start this project on MacBook Pro and will push it to github (slobajecar/myBlog) and from there will try to synchronize it with other development
+machines that I use.
+I will also assume that development machine is set up correctly and that Ruby, Rails, Bundler, MySQL and other tools and gems are correctly installed.
+Later, I will try to add a list of all the dependencies to make things more clearer.
+
+- I'm starting on Mac and my default ruby version is 1.8.7. To change that immediately, I'm starting a Terminal and go with:
+> rvm use 1.9.2
+To check if that went fine:
+> ruby -v
+which should return 1.9.2 as the current version of the Ruby programming language.
+
+- Let's assume that my code is in ~/Sites/myBlog directory (I will not explain how to recreate github repository on local machine, I already described
+that in appropriate document sitting in SkyDrive). I go there and start RoR project with:
+> rails new myBlog
+This will create myBlog directory inside of the existing myBlog directory which all the generated files. To make sure that it works, I will start the
+server with:
+> rails s
+which will bring out WEBrick development server, probably on port 3000. Open browser and type in the address bar:
+http://localhost:3000
+and that should bring out the starting demo Rails page.
+
