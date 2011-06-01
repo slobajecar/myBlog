@@ -21,3 +21,5 @@ which will bring out WEBrick development server, probably on port 3000. Open bro
 http://localhost:3000
 and that should bring out the starting demo Rails page.
 
+- As for DB design, I will go with the DB_design.xml plan which can be opened on http://diagram.ly website and saved from there. I also saved it as a 
+JPEG file named DB_diagram.jpg.
