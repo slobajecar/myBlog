@@ -5,13 +5,13 @@ machines that I use.
 I will also assume that development machine is set up correctly and that Ruby, Rails, Bundler, MySQL and other tools and gems are correctly installed.
 Later, I will try to add a list of all the dependencies to make things more clearer.
 
-- I'm starting on Mac and my default ruby version is 1.8.7. To change that immediately, I'm starting a Terminal and go with:
+1. I'm starting on Mac and my default ruby version is 1.8.7. To change that immediately, I'm starting a Terminal and go with:
 > rvm use 1.9.2
 To check if that went fine:
 > ruby -v
 which should return 1.9.2 as the current version of the Ruby programming language.
 
-- Let's assume that my code is in ~/Sites/myBlog directory (I will not explain how to recreate github repository on local machine, I already described
+2. Let's assume that my code is in ~/Sites/myBlog directory (I will not explain how to recreate github repository on local machine, I already described
 that in appropriate document sitting in SkyDrive). I go there and start RoR project with:
 > rails new myBlog
 This will create myBlog directory inside of the existing myBlog directory which all the generated files. To make sure that it works, I will start the
@@ -21,5 +21,135 @@ which will bring out WEBrick development server, probably on port 3000. Open bro
 http://localhost:3000
 and that should bring out the starting demo Rails page.
 
-- As for DB design, I will go with the DB_design.xml plan which can be opened on http://diagram.ly website and saved from there. I also saved it as a 
+3. As for DB design, I will go with the DB_design.xml plan which can be opened on http://diagram.ly website and saved from there. I also saved it as a 
 JPEG file named DB_diagram.jpg.
+
+4. Install MySql gem by using:
+> gem instal mysql
+Another approach is to perform step 5. (edit Gemfile) and then start Bundler which should handle all dependencies and install neccessary files:
+> bundle install
+In case mysql installation fails, dev libraries should be installed as well. Typically, following libraries should be installed:
+- libmysqld-pic : MySQL database development files
+- libmysqld-dev : MySQL embedded database development files
+- libmysqlclient-dev: MySQL client database development files
+Without these library files, mysql cannot be installed properly.
+
+5. Instruct Gemfile (located in the root site filder /Sites/mysite) that we are going to use mysql by uncommenting 'sqlite3' and adding 'mysql' like:
+> # gem 'sqlite3'
+> gem 'mysql'
+
+6. To get the socket that needs to be used in configuration, type:
+> mysql_config --socket
+  Obtained value should be added into database.yml file, as depicted in the next point.
+
+7. To configure MySQL to be used instead of the SQLite3, mysite/config/database.yml should be modified so that 'development' section looks like:
+development:
+  adapter: mysql
+  encoding: utf8
+  reconnect: false
+  database: db/mysite_development
+  pool: 5
+  username: root
+  password: is1011az
+  socket: /var/run/mysqld/mysqld.sock
+
+  Same changes should be done to 'test' and 'production' section of the database.yml file (with database names mysite_test and mysite_production)
+
+8. Now, create the DB by using rake (if not already installed, try with: sudo apt-get install rake):
+> rake db:create
+  This command creates two new databases: db/mysite_test and db/mysite_production which can be seen in Emma or MySQL Navigator or some other similar tool.
+
+9. To set up a home page, a view and a controller must be built, which is done by:
+> rails generate controller home index
+  This line generates controller named 'home' with method (action) named 'index' which should be default page. Now I will edit created view template with:
+> nano app/views/home/index.html.erb
+  And will modify it to contain only single line of code:
+<h1>This is homepage</h1>
+
+10. To set home page to newly created, static home from /public folder must be deleted since it takes presedence over the dynamically created page.
+> rm public/index.html
+  Now routing should be set so that Rails knows where home page is located. This is done by modifying config/routes.rb file:
+> nano config/routes.rb
+  And following line should be added:
+root :to => "home#index"
+  This will route homepage to newly added page. Check can be made by starting a server:
+> rails s
+  And opening hompage in browser with:
+http://localhost:3000 (or whichever port is active in webserver)
+
+11. Next step will be to create database according to the model provided in DB_diagram.jpg. First, I will create BlogEntry
+table. To create BlogEntry model (which will be used for table creation):
+> rails generate model BlogEntry 
+To review content of the generated migration file:
+> nano db/migrate/xxxx_create_blog_entries.rb
+This file should be changed in such a way to reflect data that is used to form BlogEntry table. Complete file should look like this (self_up method should be modified since it explains what is migrated with one version up, self_down
+is for downgrading):
+class CreateBlogEntries < ActiveRecord::Migration
+  def self.up
+    create_table :blog_entries do |t|
+      t.column :created_at, :timestamp
+      t.column :created_on, :timestamp
+      t.column :published_date, :datetime, :null => true
+      t.column :category_id, :integer, :null => false
+      t.column :user_id, :integer, :null => false
+      t.column :title, :string, :limit => 255, :null => false
+      t.column :content, :text, :limit => 65535, :null => false
+    end
+  end
+
+  def self.down
+    drop_table :blog_entries
+  end
+end
+
+NOTE:
+* Primary key is automatically created by the migration tool, no need to specify it.
+* created_at keeps a timestamp when record is created
+* created_on keeps a timestamp when record is created or updated
+* type 'text' converts to one of the BLOB types (depending on the limit)
+Look more at:
+http://www.packtpub.com/article/working-with-rails-activerecord-migrations-models-scaffolding-and-database-completion
+
+12. To complete migration, type inside RAILS_ROOT folder:
+> rake db:migrate
+Version of the DB is kept in schema_info table in the DB, and particular version (rollback) can be obtained via:
+> rake db:migrate VERSION=x
+
+13. Adding other tables is similar, but other than tables, relations between tables should be also added. Good starting point would be:
+http://guides.rubyonrails.org/association_basics.html
+
+14. First, I will create Comments table by typing:
+> rails generate model Comment
+And then edit /db/migrate/xxx_create_comments.rb to make it like:
+class CreateComments < ActiveRecord::Migration
+  def self.up
+    create_table :comments do |t|
+      t.column :created_at, :timestamp
+      t.column :created_on, :timestamp
+      t.column :blog_entry_id, :integer, :null => false
+      t.column :user_id, :integer, :null => false
+      t.column :comment, :text, :limit => 65535, :null => false
+    end
+  end
+
+  def self.down
+    drop_table :comments
+  end
+end
+
+15. To add these changes to MySQL DB, execute migration once again:
+> rake db:migrate
+
+16. Now I should add 1:n relationship between BlogEntries and Commeents tables. This is done by editing already generated 
+/app/models/blog_entry.rb and comment.rb files to add associations to them:
+#blog_entry.rb
+class BlogEntry < ActiveRecord::Base
+  has_many :comments
+end
+
+#comment.rb
+class Comment < ActiveRecord::Base
+  belongs_to :blog_entry
+end
+
+This should add 1:n relationship between BlogEntry and Comment tables
